@@ -1,7 +1,7 @@
 # 构建与安装
 
 本仓库只维护**一份** skill 源（`skills/schematic-reviewer/`），由 `build.py` 渲染出
-WorkBuddy（Windows + Git Bash）与 Codex 两套可直接安装的产物。
+WorkBuddy（Windows + Git Bash）、Codex 与 Claude Code 三套可直接安装的产物。
 
 ## 构建
 
@@ -9,9 +9,10 @@ WorkBuddy（Windows + Git Bash）与 Codex 两套可直接安装的产物。
 
 ```bash
 python build.py                     # 构建全部平台到 dist/
-python build.py --platform codex    # 只构建指定平台
+python build.py --platform claude   # 只构建指定平台
 python build.py --check             # 只校验模板能否渲染，不写 dist/
 python build.py --install workbuddy # 构建并直接装到 ~/.workbuddy/skills
+python build.py --install claude    # 构建并直接装到 ~/.claude/skills
 python build.py --clean             # 删除 dist/
 ```
 
@@ -22,6 +23,7 @@ python build.py --clean             # 删除 dist/
 ```
 dist/workbuddy/schematic-reviewer/    # 拷到 ~/.workbuddy/skills/ 即可
 dist/codex/schematic-reviewer/        # 拷到 ~/.codex/skills/ 即可
+dist/claude/schematic-reviewer/       # 拷到 ~/.claude/skills/ 即可
 dist/<平台>/BUILD.json                # 本次构建的平台、变量与文件清单
 ```
 
@@ -33,12 +35,14 @@ python build.py --check             # 残留标记或未定义占位符会直接
 
 ### 为什么要有构建这一步
 
-两套产物 90% 的内容是一样的，差异只有三处：
+三套产物 90% 的内容是一样的，差异只有这几处：
 
-1. **工具映射**：WorkBuddy 用 Read / WebFetch / Bash，Codex 用 `pdf` skill 与 shell 抓取。
-2. **跑脚本的方式**：WorkBuddy 用托管 Python 绝对路径，Codex 用相对路径 `python scripts/...`。
+1. **工具映射**：WorkBuddy 用 Read / WebFetch / Bash，Codex 用 `pdf` skill 与 shell 抓取；
+   Claude Code 与 WorkBuddy 同源（Read 可直接看图和 PDF、WebFetch 抓网页），浏览器交互走 `web-access` 技能。
+2. **跑脚本的方式**：WorkBuddy 用托管 Python 绝对路径，Codex 用相对路径 `python scripts/...`；
+   Claude Code 用内置的 `${CLAUDE_SKILL_DIR}` 定位脚本目录，解释器用 `python`。
 3. **frontmatter 与专属文件**：WorkBuddy 多 `agent_created` / `metadata.short-description`；
-   Codex 多 `agents/openai.yaml`。
+   Codex 多 `agents/openai.yaml`；Claude Code 只用标准字段（`name` + `description`），不加专属文件。
 
 把这三处抽出来之后，脚本、测试、参考资料只留一份，不会再出现「改了一边忘了另一边」的漂移。
 语法细节见 [../platforms/README.md](../platforms/README.md)。
@@ -72,6 +76,25 @@ python build.py --install codex
 cp -r dist/codex/schematic-reviewer ~/.codex/skills/
 ```
 
+### Claude Code
+
+```bash
+python build.py --install claude
+```
+
+或手动拷贝（个人级 skill，所有项目可用）：
+
+```bash
+mkdir -p ~/.claude/skills
+cp -r dist/claude/schematic-reviewer ~/.claude/skills/
+```
+
+装好后在会话里输入 `/skills` 应能看到 `schematic-reviewer`；直接说「检查这份原理图」也会按
+description 自动触发。脚本路径由 Claude Code 注入的 `${CLAUDE_SKILL_DIR}` 解析，**不要**把它改成绝对路径。
+
+只想在当前项目里用，就把目录放到项目的 `.claude/skills/` 下；团队共享则提交该目录。
+`--install claude` 覆盖同名技能前会先备份成 `schematic-reviewer.backup-<时间戳>`。
+
 ## 规范符合性
 
 产物按 Agent Skills 规范组织（参考 anthropics/skills 的 skill-creator 与官方 best-practices）：
@@ -79,9 +102,9 @@ cp -r dist/codex/schematic-reviewer ~/.codex/skills/
 | 要求 | 本仓库的做法 |
 |---|---|
 | `SKILL.md` 必填 `name` + `description` | 都有；`name` 为小写连字符，`description` 单行、第三人称、含“做什么 + 何时触发” |
-| `description` 不得含尖括号、≤1024 字符 | 不用 YAML 的 `>-` 折叠标量（那个 `>` 会被朴素校验器判成尖括号），写成语义等价的单行标量 |
+| `description` 不得含尖括号、≤1024 字符 | 是（318 字符）；不用 YAML 的 `>-` 折叠标量（那个 `>` 会被朴素校验器判成尖括号），写成语义等价的单行标量 |
 | 目录只放 `SKILL.md` + `scripts/` + `references/`（+ 功能性 `tests/`） | 是；不放 `README.md` 之类附属文档，给人看的说明放在 `docs/` |
-| `SKILL.md` 正文 ≤ 500 行 | 是（产物 247 行 / 268 行） |
+| `SKILL.md` 正文 ≤ 500 行 | 是（产物 247 / 269 / 265 行，codex / workbuddy / claude） |
 | 渐进披露：细节放 `references/`，只被 `SKILL.md` 直接引用（引用深度 ≤ 1 层） | 是；`references/` 之间不互相链接 |
 | 长参考文件（>100 行）带目录 | 是 |
 | 把会失败的点单独收敛成 Gotchas 章节 | 是，见 `SKILL.md` 的「Gotchas（踩过的坑）」 |

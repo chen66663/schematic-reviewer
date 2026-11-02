@@ -1,8 +1,8 @@
 # 嘉立创 EDA / BOM 导出格式
 
-<!-- @if workbuddy -->
-> 下文所有命令里的 `$PY` 与 `$SK` 定义在 SKILL.md 的「WorkBuddy 环境适配」一节，
-> 分别是托管 Python 解释器和本技能的 `scripts/` 目录绝对路径。
+<!-- @if workbuddy,claude -->
+> 下文所有命令里的 `$PY` 与 `$SK` 定义在 SKILL.md 的「环境适配」一节，
+> 分别是 Python 解释器和本技能的 `scripts/` 目录。
 <!-- @endif -->
 
 ## 目录

@@ -5,8 +5,14 @@
 > 下载 PDF 用 Bash `curl -L -o <file> "<URL>"`；只有在页面必须交互渲染时才考虑 `agent-browser` 技能。
 > 这些 checklist 页多为静态 HTML，抓取即可。
 <!-- @else -->
+<!-- @if claude -->
+> 执行检查时按需抓取，不要凭记忆执行检查。Claude Code 里首选 WebFetch 工具（自动转 markdown），
+> 下载 PDF 用 Bash `curl -L -o <file> "<URL>"`；只有在页面必须交互渲染时才用 `web-access` 技能。
+> 这些 checklist 页多为静态 HTML，抓取即可。
+<!-- @else -->
 > 执行检查时按需抓取，不要凭记忆执行检查。本环境没有浏览器自动化工具，
 > 用 shell 抓取即可（`Invoke-WebRequest` / `curl`），checklist 页多为静态 HTML。
+<!-- @endif -->
 <!-- @endif -->
 
 ## 一、原理图检查 Checklist

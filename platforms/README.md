@@ -6,7 +6,7 @@
 |---|---|
 | `name` | 平台标识，必须与 `skills/` 里 `<!-- @if NAME -->` 用的名字一致 |
 | `display_name` | 只在构建日志和 `dist/<平台>/BUILD.json` 里显示 |
-| `install_dir` | `build.py --install` 的安装目标，支持 `~` |
+| `install_dir` | `build.py --install` 的安装目标，支持 `~`。WorkBuddy/Codex 用各自的 `skills/`，Claude Code 用 `~/.claude/skills` |
 | `vars` | 模板变量取值，对应源文件里的 `{{PY}}` |
 | `patterns` | 带参占位符取值，对应源文件里的 `{{script:文件名}}` |
 | `overlay` | 平台专属文件的目录名，内容按相对路径镜像进 `dist/<平台>/` |
@@ -21,10 +21,10 @@
 ```
 ````
 
-| 占位符 | workbuddy 取值 | codex 取值 |
-|---|---|---|
-| `{{PY}}` | `"$PY"`（配套 SKILL.md 里定义的托管 Python 绝对路径） | `python` |
-| `{{script:<名>}}` | `"$SK/<名>"` | `scripts/<名>` |
+| 占位符 | workbuddy 取值 | codex 取值 | claude 取值 |
+|---|---|---|---|
+| `{{PY}}` | `"$PY"`（配套 SKILL.md 里定义的托管 Python 绝对路径） | `python` | `"$PY"`（`PY="python"`） |
+| `{{script:<名>}}` | `"$SK/<名>"` | `scripts/<名>` | `"$SK/<名>"`（`SK="${CLAUDE_SKILL_DIR}/scripts"`） |
 
 渲染结果：
 
@@ -32,6 +32,7 @@
 |---|---|
 | workbuddy | `"$PY" "$SK/review_export.py" export.txt --jobs 6` |
 | codex | `python scripts/review_export.py export.txt --jobs 6` |
+| claude | `"$PY" "$SK/review_export.py" export.txt --jobs 6` |
 
 `script` 这个占位符带参数（文件名），所以前缀和后缀都能按平台各自定义——workbuddy 需要一整段
 带引号的绝对路径，codex 只需要相对路径。用带参占位符而不是 `{{SK}}` 这类纯前缀变量，是为了避免

@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
-"""schematic-reviewer 双平台构建器。
+"""schematic-reviewer 多平台构建器。
 
-把 `skills/` 下的单一源渲染成 WorkBuddy / Codex 两套可直接安装的 skill。
+把 `skills/` 下的单一源渲染成 WorkBuddy / Codex / Claude Code 三套可直接安装的 skill。
 
 用法：
     python build.py                     # 构建全部平台到 dist/
-    python build.py --platform codex    # 只构建指定平台
+    python build.py --platform claude   # 只构建指定平台
     python build.py --check             # 只校验（不写 dist/）
-    python build.py --install workbuddy # 构建并把产物装到该平台的 skills 目录
+    python build.py --install claude    # 构建并把产物装到该平台的 skills 目录
     python build.py --clean             # 删除 dist/
 
 模板语法（只在 skills/ 下的文本文件里生效）：
 
     <!-- @if workbuddy --> ... <!-- @endif -->     仅 workbuddy 保留
     <!-- @if codex -->    ... <!-- @endif -->     仅 codex 保留
-    <!-- @if workbuddy,codex --> ... <!-- @endif -->  任一命中即保留
+    <!-- @if claude -->   ... <!-- @endif -->     仅 Claude Code 保留
+    <!-- @if workbuddy,claude --> ... <!-- @endif -->  任一命中即保留
     <!-- @else -->                                 分支
     {{PY}}                                         平台变量，取值见 platforms/*.json 的 vars
     {{script:review_export.py}}                    带参占位符，取值见 patterns
@@ -288,7 +289,7 @@ def install(platform: dict, built_root: Path) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="渲染 schematic-reviewer 的 WorkBuddy / Codex 两套 skill",
+        description="渲染 schematic-reviewer 的 WorkBuddy / Codex / Claude Code 三套 skill",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--platform", action="append", metavar="NAME",

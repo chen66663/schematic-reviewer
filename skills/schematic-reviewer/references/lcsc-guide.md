@@ -1,7 +1,7 @@
 # 立创/JLC 元器件核实用法
 
-<!-- @if workbuddy -->
-> 下文命令里的 `$PY` 与 `$SK` 定义在 SKILL.md 的「WorkBuddy 环境适配」一节。
+<!-- @if workbuddy,claude -->
+> 下文命令里的 `$PY` 与 `$SK` 定义在 SKILL.md 的「环境适配」一节。
 <!-- @endif -->
 
 > **数据源**：JLC SMT 元器件库接口。它与立创商城共用同一商品库，C 编号一致，无需鉴权即可匿名调用。

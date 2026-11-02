@@ -1,8 +1,14 @@
-# schematic-reviewer — 原理图检查 skill（WorkBuddy / Codex 双平台）
+# schematic-reviewer — 原理图检查 skill（WorkBuddy / Codex / Claude Code）
 
-仓库里只维护**一份** skill 源，渲染出 WorkBuddy 与 Codex 两套可直接安装的产物。
+仓库里只维护**一份** skill 源，渲染出 WorkBuddy、Codex 与 Claude Code 三套可直接安装的产物。
 
 构建、安装与规范符合性说明见 [docs/build-and-install.md](docs/build-and-install.md)。
+
+```bash
+python build.py --install claude     # Claude Code：装到 ~/.claude/skills
+python build.py --install workbuddy  # WorkBuddy：装到 ~/.workbuddy/skills
+python build.py --install codex      # Codex：装到 ~/.codex/skills
+```
 
 ## 包含的 skill
 
@@ -20,6 +26,7 @@
 |   |-- README.md                平台标记与占位符语法
 |   |-- workbuddy.json           WorkBuddy：变量、安装目录
 |   |-- codex.json               Codex：变量、安装目录
+|   |-- claude.json              Claude Code：变量、安装目录
 |   `-- codex/overlay/           Codex 专属文件（agents/openai.yaml）
 |-- skills/                      唯一需要维护的源码
 |   `-- schematic-reviewer/
@@ -61,7 +68,7 @@
 
 ### 第 3 步：把文件地址发给 AI
 
-将导出的网表文件完整路径（文件地址）发送给 WorkBuddy 或 Codex。
+将导出的网表文件完整路径（文件地址）发送给 WorkBuddy、Codex 或 Claude Code。
 
 ### 第 4 步：使用 skill 检查原理图
 
@@ -85,7 +92,7 @@ python tests/test_parse_tel_netlist.py
 
 - Python 3.8+，脚本只依赖标准库
 - 可访问 `jlcpcb.com`（元器件接口）与厂商数据手册站点
-- WorkBuddy 或 Codex 任一环境；两侧产物互不影响
+- WorkBuddy、Codex 或 Claude Code 任一环境；三套产物互不影响
 
 ## 已知限制
 

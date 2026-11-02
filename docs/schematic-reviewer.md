@@ -1,8 +1,8 @@
 # schematic-reviewer（原理图检查专家）
 
 原理图检查与审核 skill。读数据手册做引脚级分析、查外围电路、算载流线宽、核验立创元器件参数与库存。
-本仓库只维护一份源（`skills/schematic-reviewer/`），由 `build.py` 渲染出 WorkBuddy 与 Codex 两套产物，
-两者的差异集中在下文的对照表里。
+本仓库只维护一份源（`skills/schematic-reviewer/`），由 `build.py` 渲染出 WorkBuddy、Codex 与
+Claude Code 三套产物，三者的差异集中在下文的对照表里。
 
 > 这份文档是给人看的，不随 skill 安装。skill 目录里只有 `SKILL.md`、`scripts/`、`references/`、`tests/`
 > —— 按 Agent Skills 官方约定，skill 包里不放 README 之类的附属文档。
@@ -41,13 +41,13 @@ schematic-reviewer/
 
 ## 运行脚本
 
-两套产物里命令的写法不同，语义完全一样：
+三套产物里命令的写法不同，语义完全一样：
 
-| | WorkBuddy | Codex |
-|---|---|---|
-| 解释器 | 托管 Python 绝对路径，先定义 `$PY` | `python` |
-| 脚本位置 | `$SK` 指向 skill 的 `scripts/` 目录 | 相对路径 `scripts/` |
-| 预检 | `"$PY" "$SK/review_export.py" export.txt --jobs 6` | `python scripts/review_export.py export.txt --jobs 6` |
+| | WorkBuddy | Codex | Claude Code |
+|---|---|---|---|
+| 解释器 | 托管 Python 绝对路径，先定义 `$PY` | `python` | `PY="python"` |
+| 脚本位置 | `$SK` 指向 skill 的 `scripts/` 目录 | 相对路径 `scripts/` | `SK="${CLAUDE_SKILL_DIR}/scripts"` |
+| 预检 | `"$PY" "$SK/review_export.py" export.txt --jobs 6` | `python scripts/review_export.py export.txt --jobs 6` | `"$PY" "$SK/review_export.py" export.txt --jobs 6` |
 
 WorkBuddy 下先在 Bash 里定义一次（脚本只依赖标准库，已用托管 Python 3.13 验证）：
 
@@ -56,7 +56,14 @@ SK="$HOME/.workbuddy/skills/schematic-reviewer/scripts"
 PY=$(ls -1 "$HOME"/.workbuddy/binaries/python/versions/*/python.exe 2>/dev/null | sort -V | tail -n1)
 ```
 
-不要用裸 `python` / `py`，PATH 里可能命中别的解释器。Codex 下直接 `python scripts/xxx.py`。
+Claude Code 下由技能注入的目录变量定位脚本，不写死安装位置：
+
+```bash
+SK="${CLAUDE_SKILL_DIR}/scripts"
+PY="python"
+```
+
+不要用裸 `python` / `py`（WorkBuddy），PATH 里可能命中别的解释器。Codex 下直接 `python scripts/xxx.py`。
 
 常用命令（把前缀按上表替换即可）：
 
@@ -108,13 +115,13 @@ PY=$(ls -1 "$HOME"/.workbuddy/binaries/python/versions/*/python.exe 2>/dev/null 
 
 ## 工具映射
 
-| 任务 | WorkBuddy | Codex |
-|---|---|---|
-| 读原理图图片 / PDF | Read 工具（原生多模态与 PDF 解析） | 直接查看图片文件；PDF 用 `pdf` skill |
-| 抓外部 checklist、在线手册页 | WebFetch（自动转 markdown） | shell 里 `curl` / `Invoke-WebRequest` |
-| 下载手册 PDF | Bash `curl -L -o <file> "<URL>"`，校验文件头 `%PDF-` | 同上（无浏览器自动化工具） |
-| 立创元器件数据 | 只能用 `lcsc_lookup.py` 接口 | 同上，抓网页拿不到数据 |
-| 跑脚本 | Bash（Git Bash，正斜杠路径） | shell，相对路径 `scripts/` |
+| 任务 | WorkBuddy | Codex | Claude Code |
+|---|---|---|---|
+| 读原理图图片 / PDF | Read 工具（原生多模态与 PDF 解析） | 直接查看图片文件；PDF 用 `pdf` skill | Read 工具（原生多模态与 PDF 解析） |
+| 抓外部 checklist、在线手册页 | WebFetch（自动转 markdown） | shell 里 `curl` / `Invoke-WebRequest` | WebFetch（自动转 markdown） |
+| 下载手册 PDF | Bash `curl -L -o <file> "<URL>"`，校验文件头 `%PDF-` | 同上（无浏览器自动化工具） | Bash `curl -L -o`，校验 `%PDF-` |
+| 立创元器件数据 | 只能用 `lcsc_lookup.py` 接口 | 同上，抓网页拿不到数据 | 同上 |
+| 跑脚本 | Bash（Git Bash，正斜杠路径） | shell，相对路径 `scripts/` | Bash，`${CLAUDE_SKILL_DIR}` 定位 |
 
 ## 验证
 
@@ -128,7 +135,8 @@ python tests/test_parse_schematic_export.py
 python tests/test_parse_tel_netlist.py
 ```
 
-WorkBuddy 下已装的 skill 用 `"$PY" tests/test_xxx.py`，并先 `cd "$HOME/.workbuddy/skills/schematic-reviewer"`。
+WorkBuddy 下已装的 skill 用 `"$PY" tests/test_xxx.py`，并先 `cd "$HOME/.workbuddy/skills/schematic-reviewer"`；
+Claude Code 下用 `cd "${CLAUDE_SKILL_DIR}" && "$PY" tests/test_xxx.py`。
 
 本机已验证：23 项全部通过；`lcsc_lookup.py get C8734` 实返回 STM32F103C8T6 库存 148295。
 
@@ -143,11 +151,12 @@ WorkBuddy 下已装的 skill 用 `"$PY" tests/test_xxx.py`，并先 `cd "$HOME/.
 
 - Python 3.8+，脚本只依赖标准库
 - 可访问 `jlcpcb.com`（元器件接口）与厂商数据手册站点
-- WorkBuddy 下用托管 Python 绝对路径，不要用裸 `python`
+- WorkBuddy 下用托管 Python 绝对路径，不要用裸 `python`；Claude Code 下用 `python` 即可
 
 ## 已知限制
 
-- 无浏览器自动化：立创商城网页是 JS 单页应用，抓 HTML 拿不到商品数据，必须走接口。
+- 本体不内置浏览器自动化：立创商城网页是 JS 单页应用，抓 HTML 拿不到商品数据，必须走接口；
+  确需登录态或页面交互时，Claude Code 可配合 `web-access` 技能。
 - 嘉立创 EDA/BOM 导出通常只有器件参数，没有网络连接；不能据此判断具体引脚接线。带 `$NETS` 的 `.tel`
   可以核对 `位号.引脚号`，但仍没有坐标和封装引脚名，无法判断去耦是否靠近引脚或走线宽度。
 - 元器件接口为第三方公开接口，无鉴权但可能变更；失效时脚本会明确报错，需重新探查接口。

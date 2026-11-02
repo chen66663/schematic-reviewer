@@ -1,0 +1,12 @@
+{
+  "name": "claude",
+  "display_name": "Claude Code",
+  "install_dir": "~/.claude/skills",
+  "vars": {
+    "PY": "\"$PY\""
+  },
+  "patterns": {
+    "script": ["\"$SK/", "\""]
+  },
+  "overlay": "overlay"
+}

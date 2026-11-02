@@ -10,9 +10,10 @@ description: 检查与审核原理图：读芯片数据手册做逐引脚分析�
 
 # 原理图检查专家
 
-<!-- @if workbuddy -->
-## WorkBuddy 环境适配
+<!-- @if workbuddy,claude -->
+## 环境适配
 
+<!-- @if workbuddy -->
 本技能运行在 WorkBuddy（Windows + Git Bash）下。执行任何脚本前，先在 Bash 里执行一次：
 
 ```bash
@@ -22,16 +23,28 @@ PY=$(ls -1 "$HOME"/.workbuddy/binaries/python/versions/*/python.exe 2>/dev/null 
 ```
 
 - 不要用裸 `python` / `py`：PATH 里可能命中别的解释器，版本与依赖都不可控。
+- 脚本只依赖标准库，Python 3.8+ 可跑；已用托管 Python 3.13 验证（23 项回归测试全绿）。
+<!-- @else -->
+本技能运行在 Claude Code 下。执行任何脚本前，先定义两个变量：
+
+```bash
+SK="${CLAUDE_SKILL_DIR}/scripts"   # Claude Code 注入，指向本 skill 的 SKILL.md 所在目录
+PY="python"                        # 脚本只用标准库；不要用 py 启动器
+```
+
+- `CLAUDE_SKILL_DIR` 由 Claude Code 替换为技能目录，技能装到 `~/.claude/skills` 或插件里都能用，不要写死路径。
+- 脚本只依赖标准库，Python 3.8+ 可跑；已用 Python 3.11 与 3.9 验证（23 项回归测试全绿）。
+<!-- @endif -->
+
 - 路径一律用正斜杠 `/`；含空格的路径整段加双引号。后文所有命令都写成 `"$PY" "$SK/xxx.py"` 的形式。
 - 技能装在别处时，把 `SK` 指向实际的 `scripts` 目录；`references/` 与 `tests/` 就在它的同级。
-- 脚本只依赖标准库，Python 3.8+ 可跑；已用托管 Python 3.13 验证（23 项回归测试全绿）。
 - 网络出口可直连 `jlcpcb.com`，实测返回真实库存数据；若报「无法访问元器件接口」，说明当前沙箱/代理拦截，如实告知用户，不要伪造参数。
 - 本技能的交付物是**对话里的问题清单**，不是文件。用户明确要求时才落盘，且不要写 `.md` 报告。
 
 <!-- @endif -->
 ## 输出原则
 
-- **只列有问题的部分**，直接说哪里有问题、怎么改。不生成图片或 HTML，不写概述/总结/检查依据等报告套话<!-- @if workbuddy -->；结果直接在对话里按第 6 步的格式列出，也不落盘成 `.md` 文件<!-- @endif -->。
+- **只列有问题的部分**，直接说哪里有问题、怎么改。不生成图片或 HTML，不写概述/总结/检查依据等报告套话<!-- @if workbuddy,claude -->；结果直接在对话里按第 6 步的格式列出，也不落盘成 `.md` 文件<!-- @endif -->。
 - **每条结论必须有依据**：数据手册页码或章节名、外部 checklist 条目、接口返回的实际参数、可复现的载流计算。
 - **元器件关键参数必须查接口核实**——耐压、额定电流、功率等不凭记忆填写。
 - **选型必须确认现货库存大于 0**，缺货件要标注并给出替代型号。
@@ -70,6 +83,21 @@ PY=$(ls -1 "$HOME"/.workbuddy/binaries/python/versions/*/python.exe 2>/dev/null 
 
 > 元器件信息一律走接口。立创商城网页是 JS 单页应用，抓 HTML 只能拿到空壳。
 <!-- @else -->
+<!-- @if claude -->
+| 任务 | 用什么 |
+|---|---|
+| 读原理图图片（PNG/JPG） | Read 工具直接查看图片，逐模块识别器件 |
+| 读原理图 / 数据手册 PDF | Read 工具原生读 PDF（逐页提取文字与版式）；`*.pdf` 先用 Bash 下载并校验文件头为 `%PDF-` |
+| 抓数据手册 / 外部 checklist | WebFetch 工具（首选，自动转 markdown）；静态 PDF 用 Bash `curl -L -o` 下载 |
+| 立创商城等 JS 单页应用 | 走 `{{script:lcsc_lookup.py}}` 接口，**不要**用 WebFetch 抓商品页（拿不到数据）；确有交互需求时用 `web-access` 技能 |
+| 快速预检嘉立创 EDA/BOM 导出 | `{{script:review_export.py}}`（解析、去重、并发、缓存、问题筛选） |
+| 解析 BOM 卡片、CSV/TSV 元件表 | `{{script:parse_schematic_export.py}}`（需要原始清单或自定义输出时使用） |
+| 解析 .tel 原理图网表 | `{{script:parse_tel_netlist.py}}`（含 `$PACKAGES` 与 `$NETS` 时使用） |
+| 元器件规格与库存 | `{{script:lcsc_lookup.py}}`（见下） |
+| 载流计算 | `{{script:trace_width.py}}`（见下） |
+
+> 元器件信息一律走接口。立创商城网页是 JS 单页应用，抓 HTML 只能拿到空壳。
+<!-- @else -->
 | 任务 | 用什么 |
 |---|---|
 | 读原理图图片（PNG/JPG） | 直接查看图片文件，逐模块识别器件 |
@@ -84,6 +112,7 @@ PY=$(ls -1 "$HOME"/.workbuddy/binaries/python/versions/*/python.exe 2>/dev/null 
 
 > 本环境**没有浏览器自动化工具**，也没有 PDF 之外的专用阅读技能。立创商城网页是 JS 单页应用，
 > 直接抓 HTML 拿不到商品数据，元器件信息一律走接口。
+<!-- @endif -->
 <!-- @endif -->
 
 ## 导出预检与解析
@@ -177,14 +206,14 @@ C0402 ! CC0402JRNPO9BN470容值:47pF;精度:±5%;额定电压:50V ! 47pF ,
 
 ## 数据手册获取
 
-1. 优先抓**厂商官网 PDF**（如 `https://www.st.com/resource/en/datasheet/<型号>.pdf`），一般可直接下载<!-- @if workbuddy -->：`curl -L -o ds.pdf "<URL>"`（Git Bash；超时加 `--max-time 60`）<!-- @endif -->。
+1. 优先抓**厂商官网 PDF**（如 `https://www.st.com/resource/en/datasheet/<型号>.pdf`），一般可直接下载<!-- @if workbuddy,claude -->：`curl -L -o ds.pdf "<URL>"`（Git Bash；超时加 `--max-time 60`）<!-- @endif -->。
 2. 接口返回的 `dataManualUrl` 可作线索，但它是 LCSC 在线阅读页而非 PDF 直链。
-3. <!-- @if workbuddy -->下载后校验文件头：`head -c 5 ds.pdf` 应为 `%PDF-`<!-- @else -->下载后校验：文件头应为 `%PDF-`<!-- @endif -->；若是 `<!doctype html>` 说明被拦，换来源。
-4. <!-- @if workbuddy -->用 Read 工具读 PDF（原生逐页提取文字与版式）<!-- @else -->用 `pdf` skill 读取<!-- @endif -->，**必须读到**：Pin Configuration、Recommended Operating Conditions、
+3. <!-- @if workbuddy,claude -->下载后校验文件头：`head -c 5 ds.pdf` 应为 `%PDF-`<!-- @else -->下载后校验：文件头应为 `%PDF-`<!-- @endif -->；若是 `<!doctype html>` 说明被拦，换来源。
+4. <!-- @if workbuddy,claude -->用 Read 工具读 PDF（原生逐页提取文字与版式）<!-- @else -->用 `pdf` skill 读取<!-- @endif -->，**必须读到**：Pin Configuration、Recommended Operating Conditions、
    Electrical Characteristics、Absolute Maximum Ratings、Application Information/Typical Application、
    Layout Guidelines。
 5. 手册很长时按关键词定位（“pin description”、“decoupling”、“layout”、“application circuit”），不要逐页通读。
-<!-- @if workbuddy -->
+<!-- @if workbuddy,claude -->
 6. 下载不到 PDF 时，用 WebFetch 抓厂商在线版页面作次选，并明确标注依据是网页而非手册原文。
 <!-- @endif -->
 
@@ -283,11 +312,11 @@ C0402 ! CC0402JRNPO9BN470容值:47pF;精度:±5%;额定电压:50V ! 47pF ,
 
 1. 禁止凭记忆填写元器件耐压、电流、功率等参数，必须查接口核实。
 2. 数据手册引用必须标注页码或章节名。
-3. 检查规则优先引用外部权威 checklist<!-- @if workbuddy -->（用 WebFetch 现抓）<!-- @endif -->，不要只依赖本地 references。
+3. 检查规则优先引用外部权威 checklist<!-- @if workbuddy,claude -->（用 WebFetch 现抓）<!-- @endif -->，不要只依赖本地 references。
 4. 用户未提供原理图文件时，先询问输入形式，不要凭空假设电路。
 5. 载流计算默认 1oz 铜厚；用户指定其它铜厚时按比例换算并注明假设。
 6. 解析嘉立创 EDA/BOM 导出时先运行 `{{script:review_export.py}}` 做一次批量预检；不得逐件重复查询已通过型号。
 7. 解析含 `$PACKAGES` 与 `$NETS` 的 `.tel` 网表时先运行 `{{script:parse_tel_netlist.py}}`；引脚连接只以 `REF.PIN` 记录为准。
-<!-- @if workbuddy -->
-8. 跑脚本一律用「WorkBuddy 环境适配」里的 `$PY` 与 `$SK`，不要用裸 `python` 或 `py`，避免命中系统里其它 Python。
+<!-- @if workbuddy,claude -->
+8. 跑脚本一律用「环境适配」里的 `$PY` 与 `$SK`，不要自己拼路径，避免命中系统里其它 Python。
 <!-- @endif -->

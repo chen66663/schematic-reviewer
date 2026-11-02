@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: 模板校验 / 测试
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.8 已从 GitHub 托管 runner 下架；代码仍兼容 3.8，CI 从 3.9 起覆盖
+        python-version: ["3.9", "3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: 校验三平台模板可渲染
+        run: python build.py --check
+
+      - name: 回归测试
+        run: python -m unittest discover -s skills/schematic-reviewer/tests -v
+
+  build:
+    name: 构建三平台产物
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: python build.py
+
+      - name: 产物检查（正文行数 ≤ 500、无残留标记）
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import sys
+          bad = []
+          for p in sorted(Path("dist").glob("*/schematic-reviewer/SKILL.md")):
+              text = p.read_text(encoding="utf-8")
+              lines = len(text.splitlines())
+              if lines > 500:
+                  bad.append(f"{p}: {lines} 行超过 500")
+              if "<!-- @" in text or "{{" in text:
+                  bad.append(f"{p}: 残留模板标记或占位符")
+              print(f"{p}: {lines} 行")
+          sys.exit(1 if bad else 0)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
