@@ -104,7 +104,7 @@ description 自动触发。脚本路径由 Claude Code 注入的 `${CLAUDE_SKILL
 | `SKILL.md` 必填 `name` + `description` | 都有；`name` 为小写连字符，`description` 单行、第三人称、含“做什么 + 何时触发” |
 | `description` 不得含尖括号、≤1024 字符 | 是（318 字符）；不用 YAML 的 `>-` 折叠标量（那个 `>` 会被朴素校验器判成尖括号），写成语义等价的单行标量 |
 | 目录只放 `SKILL.md` + `scripts/` + `references/`（+ 功能性 `tests/`） | 是；不放 `README.md` 之类附属文档，给人看的说明放在 `docs/` |
-| `SKILL.md` 正文 ≤ 500 行 | 是（产物 247 / 269 / 265 行，codex / workbuddy / claude） |
+| `SKILL.md` 正文 ≤ 500 行 | 是（产物 256 / 278 / 274 行，codex / workbuddy / claude） |
 | 渐进披露：细节放 `references/`，只被 `SKILL.md` 直接引用（引用深度 ≤ 1 层） | 是；`references/` 之间不互相链接 |
 | 长参考文件（>100 行）带目录 | 是 |
 | 把会失败的点单独收敛成 Gotchas 章节 | 是，见 `SKILL.md` 的「Gotchas（踩过的坑）」 |
