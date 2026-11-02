@@ -65,6 +65,37 @@ jobs:
           sys.exit(1 if bad else 0)
           PY
 
+      - name: 校验安装包与构建产物一致
+        run: |
+          python - <<'PY'
+          import hashlib, sys, zipfile
+          from pathlib import Path
+
+          problems = []
+          for z in sorted(Path("packages").glob("*.zip")):
+              platform = z.stem.rsplit("-", 1)[-1]
+              src = Path("dist") / platform
+              if not src.is_dir():
+                  problems.append(f"{z}: 缺少 dist/{platform}")
+                  continue
+              with zipfile.ZipFile(z) as zf:
+                  names = set(zf.namelist())
+                  expect = {
+                      p.relative_to(src).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+                      for p in src.rglob("*")
+                      if p.is_file() and not (p.parent == src and p.name == "BUILD.json")
+                  }
+                  if names != set(expect):
+                      problems.append(f"{z}: 文件清单不一致 {names ^ set(expect)}")
+                  for name, digest in expect.items():
+                      if name in names and hashlib.sha256(zf.read(name)).hexdigest() != digest:
+                          problems.append(f"{z}: {name} 内容与源码不一致")
+          if problems:
+              print(*problems, sep=chr(10))
+              sys.exit(1)
+          print("安装包与构建产物一致")
+          PY
+
       - uses: actions/upload-artifact@v4
         with:
           name: dist

@@ -8,6 +8,7 @@
     python build.py --platform claude   # 只构建指定平台
     python build.py --check             # 只校验（不写 dist/）
     python build.py --install claude    # 构建并把产物装到该平台的 skills 目录
+    python build.py --pack              # 构建并打成 packages/*.zip + SHA256SUMS
     python build.py --clean             # 删除 dist/
 
 模板语法（只在 skills/ 下的文本文件里生效）：
@@ -35,6 +36,7 @@ import re
 import shutil
 import sys
 import tempfile
+import zipfile
 from datetime import datetime
 from pathlib import Path
 
@@ -42,6 +44,7 @@ ROOT = Path(__file__).resolve().parent
 SKILLS_DIR = ROOT / "skills"
 PLATFORMS_DIR = ROOT / "platforms"
 DIST_DIR = ROOT / "dist"
+PACKAGES_DIR = ROOT / "packages"
 
 # 参与模板渲染的扩展名；其余文件原样拷贝
 TEXT_EXTS = {
@@ -268,6 +271,53 @@ def write_manifest(target_root: Path, platform: dict, stats: list[tuple[str, int
     )
 
 
+def pack(platforms: list[dict]) -> list[Path]:
+    """把 dist/<平台>/<skill>/ 打成 packages/<skill>-<平台>.zip。
+
+    压缩包内顶层目录就是 skill 名，解压后直接得到可安装的 skill 目录。
+    条目时间固定为 1980-01-01、顺序固定，内容不变时产物稳定，避免无意义 diff。
+    """
+    PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
+    written: list[Path] = []
+    for platform in platforms:
+        name = platform["name"]
+        src_root = DIST_DIR / name
+        if not src_root.is_dir():
+            raise BuildError(f"{name}: 缺少构建产物，先运行 python build.py --platform {name}")
+        skills = [p for p in sorted(src_root.iterdir()) if p.is_dir()]
+        if not skills:
+            raise BuildError(f"{name}: {src_root} 下没有 skill 目录")
+        skill = skills[0]
+        out = PACKAGES_DIR / f"{skill.name}-{name}.zip"
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+            for src in sorted(src_root.rglob("*")):
+                if not src.is_file():
+                    continue
+                if src.parent == src_root and src.name == "BUILD.json":
+                    continue
+                info = zipfile.ZipInfo(src.relative_to(src_root).as_posix(),
+                                       date_time=(1980, 1, 1, 0, 0, 0))
+                info.compress_type = zipfile.ZIP_DEFLATED
+                info.external_attr = 0o644 << 16
+                zf.writestr(info, src.read_bytes())
+        written.append(out)
+    return written
+
+
+def write_checksums(paths: list[Path]) -> Path:
+    """生成 packages/SHA256SUMS，便于下载后校验。"""
+    import hashlib
+
+    lines = []
+    for path in sorted(paths):
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        lines.append(f"{digest}  {path.name}")
+    target = PACKAGES_DIR / "SHA256SUMS"
+    payload = "\n".join(lines) + "\n"
+    target.write_bytes(payload.encode("utf-8"))
+    return target
+
+
 def expand(path: str) -> Path:
     return Path(path.replace("~", str(Path.home()), 1))
 
@@ -305,6 +355,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="只校验模板能否渲染，不写 dist/")
     parser.add_argument("--install", metavar="NAME",
                         help="构建后把产物安装到该平台的 skills 目录")
+    parser.add_argument("--pack", action="store_true",
+                        help="构建后把产物打成 packages/<skill>-<平台>.zip")
     parser.add_argument("--clean", action="store_true", help="删除 dist/ 后退出")
     args = parser.parse_args(argv)
 
@@ -334,6 +386,13 @@ def main(argv: list[str] | None = None) -> int:
             total = sum(c for _, c in stats)
             print(f"[build] {platform['name']} ({platform.get('display_name', '')}) "
                   f"-> {target_root.relative_to(ROOT)}  共 {total} 个文件")
+
+        if args.pack:
+            zips = pack(platforms)
+            checksums = write_checksums(zips)
+            for path in zips:
+                print(f"[pack] {path.relative_to(ROOT)}  {path.stat().st_size} 字节")
+            print(f"[pack] {checksums.relative_to(ROOT)}")
 
         if args.install:
             if args.platform and args.install not in args.platform:

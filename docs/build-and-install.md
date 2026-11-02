@@ -13,6 +13,7 @@ python build.py --platform claude   # 只构建指定平台
 python build.py --check             # 只校验模板能否渲染，不写 dist/
 python build.py --install workbuddy # 构建并直接装到 ~/.workbuddy/skills
 python build.py --install claude    # 构建并直接装到 ~/.claude/skills
+python build.py --pack              # 构建并打成 packages/*.zip + SHA256SUMS
 python build.py --clean             # 删除 dist/
 ```
 
@@ -25,7 +26,14 @@ dist/workbuddy/schematic-reviewer/    # 拷到 ~/.workbuddy/skills/ 即可
 dist/codex/schematic-reviewer/        # 拷到 ~/.codex/skills/ 即可
 dist/claude/schematic-reviewer/       # 拷到 ~/.claude/skills/ 即可
 dist/<平台>/BUILD.json                # 本次构建的平台、变量与文件清单
+
+packages/schematic-reviewer-<平台>.zip  # --pack 生成的安装包（入库，供直接下载）
+packages/SHA256SUMS                     # 上述 zip 的校验和
 ```
+
+zip 内顶层目录就是 `schematic-reviewer/`，解压到对应平台的 skills 目录即可安装。
+压缩包条目时间和顺序固定，源码不变时重复打包产物稳定；**改了 `skills/` 之后必须重新
+`--pack` 并提交**，否则 download 到的还是旧版。
 
 构建后建议校验一次产物：
 

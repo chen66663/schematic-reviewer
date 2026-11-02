@@ -10,6 +10,25 @@ python build.py --install workbuddy  # WorkBuddy：装到 ~/.workbuddy/skills
 python build.py --install codex      # Codex：装到 ~/.codex/skills
 ```
 
+## 下载安装包
+
+不想跑构建就用现成的 zip：解压后得到 `schematic-reviewer/` 目录，整个放进对应平台的 skills 目录即可。
+
+| 平台 | 安装包 | 解压到 |
+|---|---|---|
+| Claude Code | [schematic-reviewer-claude.zip](packages/schematic-reviewer-claude.zip) | `~/.claude/skills/` |
+| Codex | [schematic-reviewer-codex.zip](packages/schematic-reviewer-codex.zip) | `~/.codex/skills/` |
+| WorkBuddy | [schematic-reviewer-workbuddy.zip](packages/schematic-reviewer-workbuddy.zip) | `~/.workbuddy/skills/` |
+
+校验和见 [packages/SHA256SUMS](packages/SHA256SUMS)：
+
+```bash
+sha256sum -c packages/SHA256SUMS          # Linux / Git Bash
+Get-FileHash .\schematic-reviewer-claude.zip -Algorithm SHA256   # PowerShell
+```
+
+安装包由 `python build.py --pack` 从同一份源生成；改了 `skills/` 之后要重新打包再提交。
+
 ## 包含的 skill
 
 | skill | 作用 |
@@ -22,6 +41,7 @@ python build.py --install codex      # Codex：装到 ~/.codex/skills
 .
 |-- README.md                    本文件：总览与使用步骤
 |-- build.py                     构建器：单一源 -> dist/<平台>/
+|-- packages/                    三平台 zip 安装包（由 build.py --pack 生成）
 |-- platforms/                   平台适配定义
 |   |-- README.md                平台标记与占位符语法
 |   |-- workbuddy.json           WorkBuddy：变量、安装目录
