@@ -12,18 +12,21 @@ python build.py --install codex      # Codex：装到 ~/.codex/skills
 
 ## 下载安装包
 
-不想跑构建就用现成的 zip：解压后得到 `schematic-reviewer/` 目录，整个放进对应平台的 skills 目录即可。
+不想跑构建就用现成的 zip。**从 [Releases](https://github.com/chen66663/schematic-reviewer/releases/latest) 下载**，
+解压后得到 `schematic-reviewer/` 目录，整个放进对应平台的 skills 目录即可。
 
 | 平台 | 安装包 | 解压到 |
 |---|---|---|
-| Claude Code | [schematic-reviewer-claude.zip](packages/schematic-reviewer-claude.zip) | `~/.claude/skills/` |
-| Codex | [schematic-reviewer-codex.zip](packages/schematic-reviewer-codex.zip) | `~/.codex/skills/` |
-| WorkBuddy | [schematic-reviewer-workbuddy.zip](packages/schematic-reviewer-workbuddy.zip) | `~/.workbuddy/skills/` |
+| Claude Code | [schematic-reviewer-claude.zip](https://github.com/chen66663/schematic-reviewer/releases/latest/download/schematic-reviewer-claude.zip) | `~/.claude/skills/` |
+| Codex | [schematic-reviewer-codex.zip](https://github.com/chen66663/schematic-reviewer/releases/latest/download/schematic-reviewer-codex.zip) | `~/.codex/skills/` |
+| WorkBuddy | [schematic-reviewer-workbuddy.zip](https://github.com/chen66663/schematic-reviewer/releases/latest/download/schematic-reviewer-workbuddy.zip) | `~/.workbuddy/skills/` |
 
-校验和见 [packages/SHA256SUMS](packages/SHA256SUMS)：
+同样的文件也放在仓库的 [`packages/`](packages/) 目录（`/packages` 这个 URL 是 GitHub 包注册表，
+不是这个目录，别点错）。校验和见
+[Releases 里的 SHA256SUMS](https://github.com/chen66663/schematic-reviewer/releases/latest/download/SHA256SUMS)：
 
 ```bash
-sha256sum -c packages/SHA256SUMS          # Linux / Git Bash
+sha256sum -c SHA256SUMS                   # Linux / Git Bash（在下载目录执行）
 Get-FileHash .\schematic-reviewer-claude.zip -Algorithm SHA256   # PowerShell
 ```
 
