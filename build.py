@@ -231,9 +231,11 @@ def build_platform(platform: dict, target_root: Path) -> list[tuple[str, int]]:
             if src.suffix.lower() in TEXT_EXTS:
                 text = src.read_text(encoding="utf-8")
                 markdown = src.suffix.lower() in {".md", ".txt", ".rst"}
-                dst.write_text(
-                    render(text, name, platform, where, collapse_blank=markdown),
-                    encoding="utf-8", newline="\n",
+                # 不用 Path.write_text(newline=...)：该参数 Python 3.10 才有，
+                # 本仓库声明支持 3.8+，这里直接写字节保证换行固定为 LF。
+                dst.write_bytes(
+                    render(text, name, platform, where, collapse_blank=markdown)
+                    .encode("utf-8")
                 )
             else:
                 shutil.copy2(src, dst)
