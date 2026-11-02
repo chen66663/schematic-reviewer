@@ -288,6 +288,11 @@ def install(platform: dict, built_root: Path) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Windows 控制台默认 GBK，中文日志会变乱码；不支持 reconfigure 的环境忽略即可
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):
+        pass
     parser = argparse.ArgumentParser(
         description="渲染 schematic-reviewer 的 WorkBuddy / Codex / Claude Code 三套 skill",
         formatter_class=argparse.RawDescriptionHelpFormatter,
