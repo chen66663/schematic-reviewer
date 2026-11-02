@@ -9,12 +9,19 @@ on:
 jobs:
   validate:
     name: 模板校验 / 测试
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        # 3.8 已从 GitHub 托管 runner 下架；代码仍兼容 3.8，CI 从 3.9 起覆盖
-        python-version: ["3.9", "3.11", "3.13"]
+        # 3.8 已从 GitHub 托管 runner 下架；3.9 在 ubuntu-24.04 上没有预编译包，
+        # 所以老版本固定在 ubuntu-22.04 上跑，代码本身仍兼容 3.8+
+        include:
+          - os: ubuntu-22.04
+            python-version: "3.9"
+          - os: ubuntu-latest
+            python-version: "3.11"
+          - os: ubuntu-latest
+            python-version: "3.13"
     steps:
       - uses: actions/checkout@v4
 
